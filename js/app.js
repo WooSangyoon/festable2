@@ -11,12 +11,20 @@ let businessStats = {
 
 // 메뉴 데이터
 const MENU_ITEMS = [
-    { id: 'kimchi-pancake', name: '김치전', price: 8000 },
-    { id: 'pork-stirfry', name: '제육볶음', price: 12000 },
-    { id: 'pork-belly', name: '대패숙주', price: 15000 },
-    { id: 'yellow-peach', name: '황도', price: 5000 },
-    { id: 'soju', name: '소주', price: 3000 },
-    { id: 'beer', name: '맥주', price: 4000 }
+    { id: '1', name: '제육볶음', price: 15000 },
+    { id: '2', name: '오뎅탕', price: 15000 },
+    { id: '3', name: '두부김치', price: 15000 },
+    { id: '4', name: '김치전', price: 0 },
+    { id: '5', name: '들기름계란후라이', price: 0 },
+    { id: '6', name: '계란말이', price: 0 },
+    { id: '7', name: '컵라면리조또', price: 0 },
+    { id: '8', name: '김치볶음밥', price: 0 },
+    { id: '9', name: '소세지야채볶음', price: 0 },
+    { id: '10', name: '주먹밥', price: 0 },
+    { id: '11', name: '설탕토마토', price: 0 },
+    { id: '12', name: '홍초', price: 0 },
+    { id: '13', name: '라면땅', price: 0 },
+    { id: '14', name: '콘치즈', price: 0 }
 ];
 
 // 테이블 상태 상수

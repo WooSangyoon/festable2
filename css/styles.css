@@ -42,9 +42,11 @@ body {
 
 .tables-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 20px;
-    max-width: 1200px;
+    width: 100%;
+    max-width: 1600px;  /* 너무 넓게 퍼지는 것 방지 */
+    margin: 0 auto;     /* 가운데 정렬 */
 }
 
 /* 테이블 카드 스타일 */
