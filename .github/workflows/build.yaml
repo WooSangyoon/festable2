@@ -10,22 +10,22 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      # ✅ 소스 체크아웃
       - name: Checkout
-        uses: actions/checkout@v4   # ✅ checkout도 v4 최신 버전으로
+        uses: actions/checkout@v4
 
+      # ✅ Node.js 설치
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
+      # ✅ 의존성 설치
       - name: Install dependencies
         run: npm install
 
-      - name: Build app
-        run: npm run build
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4   # ✅ v4로 수정
-        with:
-          name: windows-build
-          path: dist/**
+      # ✅ Windows용 exe 빌드 + GitHub Release 자동 업로드
+      - name: Build and Publish
+        run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
