@@ -1,3 +1,10 @@
+// ===== app.js 상단에 추가 =====
+const { ipcRenderer } = require('electron');
+
+// 관리자 비밀번호 (관리자 모달과 동일 값 사용)
+const ADMIN_PASSWORD = 'admin';
+
+
 // 전역 변수
 let tables = [];
 let currentTableId = null;
@@ -1125,3 +1132,35 @@ function resetBusiness() {
   updateInsights();
   updateAdminPanel();
 }
+
+
+// ===== app.js 하단의 이벤트 바인딩 영역 근처에 추가 =====
+
+// 1) 관리자 탭의 "프로그램 종료" 버튼 클릭 시: 비번 모달 오픈
+document.getElementById('quitAppBtn').addEventListener('click', () => {
+  const input = document.getElementById('quitConfirmPassword');
+  if (input) input.value = '';     // 이전 입력 초기화
+  openModal('quitConfirmModal');
+});
+
+// 2) 재확인 모달 - 취소
+document.getElementById('quitConfirmCancel').addEventListener('click', () => {
+  closeModal('quitConfirmModal');
+});
+
+// 3) 재확인 모달 - 종료 확정
+document.getElementById('quitConfirmOK').addEventListener('click', async () => {
+  const pw = document.getElementById('quitConfirmPassword').value.trim();
+  if (pw !== ADMIN_PASSWORD) {
+    alert('비밀번호가 올바르지 않습니다.');
+    return;
+  }
+
+  // (선택) 종료 전에 하고 싶은 작업이 있으면 여기서 처리:
+  // 예: 저장/로그 남기기 등
+  // exportSalesFile();  // 자동 저장하고 싶다면 해제
+  // resetBusiness();    // 데이터 초기화까지 원하면 해제
+
+  // 메인 프로세스에 종료 요청
+  await ipcRenderer.invoke('quit-app');  // main.js에서 처리
+});

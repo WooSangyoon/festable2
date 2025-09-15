@@ -178,6 +178,7 @@ body {
 
 .btn-success:hover    { background-color: #1d6129; color: white; }
 .btn-danger:hover    { background-color: #a52d25; color: white; }
+.btn-warning:hover    { background-color: #b26a00; color: white; }
 
 /* 시간 조정 버튼 */
 .btn-sm {
@@ -264,6 +265,7 @@ body {
 
 /* 주문/메뉴 추가 버튼 그룹 */
 .order-actions {
+
     display: flex;
     flex-direction: row;
     gap: 8px;
@@ -394,6 +396,7 @@ body {
 /* 테이블 선택 / 메뉴 선택 */
 .table-selection,
 .menu-selection {
+    font-size: 14px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 10px;
