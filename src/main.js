@@ -117,3 +117,4 @@ ipcMain.handle('quit-app', () => {
 app.on('before-quit', () => {
   // 데이터 저장 등의 정리 작업
 });
+

@@ -1,3 +1,4 @@
+const { ipcRenderer } = require('electron');
 // 전역 변수
 let tables = [];
 let currentTableId = null;
@@ -427,35 +428,43 @@ function confirmCombine() {
         alert('합석할 테이블을 선택해주세요.');
         return;
     }
-    
+
     const targetTableId = parseInt(selected.dataset.tableId);
     const currentTable = tables.find(t => t.id === currentTableId);
     const targetTable = tables.find(t => t.id === targetTableId);
-    
+
     if (currentTable && targetTable) {
-        // 더 많은 시간이 남은 테이블의 시간 + 60분
-        const maxTime = Math.max(currentTable.remainingTime, targetTable.remainingTime);
-        currentTable.remainingTime = maxTime + 60;
+        // 더 많은 시간이 남은 테이블의 종료시각을 기준으로 결정
+        const now = Date.now();
+        const currentRemain = currentTable.endTime ? currentTable.endTime - now : currentTable.remainingTime * 60000;
+        const targetRemain  = targetTable.endTime ? targetTable.endTime - now : targetTable.remainingTime * 60000;
+
+        // 더 긴 남은 시간 + 60분
+        const newRemainMs = Math.max(currentRemain, targetRemain) + 60 * 60000;
+
+        // ✅ endTime을 갱신
+        currentTable.endTime = now + newRemainMs;
+        currentTable.remainingTime = Math.ceil(newRemainMs / 60000);
         currentTable.state = TABLE_STATES.IN_USE;
-        
-        // 대상 테이블의 주문들을 현재 테이블로 이동
+
+        // 주문/매출 합산
         currentTable.orders = [...currentTable.orders, ...targetTable.orders];
         currentTable.totalRevenue += targetTable.totalRevenue;
-        
+
         // 대상 테이블 초기화
         targetTable.state = TABLE_STATES.AVAILABLE;
         targetTable.remainingTime = 0;
         targetTable.orders = [];
         targetTable.startTime = null;
-        targetTable.endTime = currentTable.endTime;
-
+        targetTable.endTime = null;
         targetTable.totalRevenue = 0;
-        
+
         renderTables();
         updateOrderSummary();
         closeModal('combineModal');
     }
 }
+
 
 // 자리이동 모달 표시
 function showMoveModal(tableId) {
@@ -1110,30 +1119,24 @@ function exportSalesFile() {
 }
 
 
-// 모든 값 초기화
-function resetBusiness() {
-  tables.forEach(t => {
-    t.state = TABLE_STATES.AVAILABLE;
-    t.remainingTime = 0;
-    t.orders = [];
-    t.startTime = null;
-    t.totalRevenue = 0;
-  });
-  businessStats = { totalTables: 0, totalRevenue: 0, menuStats: {} };
-  renderTables();
-  updateOrderSummary();
-  updateInsights();
-  updateAdminPanel();
-}
+
 
 // ✅ 장사 종료 버튼: 저장 → 초기화(단일 리스너)
 document.getElementById('endBusinessBtn').addEventListener('click', () => {
   if (!confirm("정말로 장사를 종료하시겠습니까? 판매 통계를 저장한 뒤 모두 초기화됩니다.")) return;
-  exportSalesFile();
+  
+  try {
+    exportSalesFile();
+  } catch (e) {
+    console.error("엑셀 저장 중 오류:", e);
+    alert("엑셀 저장에 실패했습니다. CSV로 저장해주세요.");
+  }
+  
   resetBusiness();
   alert("판매 통계를 저장하고 초기화했습니다.");
   closeModal('adminModal');
 });
+
 
 // ✅ 모든 값 초기화
 function resetBusiness() {
@@ -1158,5 +1161,30 @@ function resetBusiness() {
   updateInsights();
   updateAdminPanel();
 }
+
+
+// =============================
+// 프로그램 종료 관련 이벤트
+// =============================
+
+// 프로그램 종료 버튼 클릭 → 비밀번호 모달 열기
+document.getElementById('quitAppBtn').addEventListener('click', () => {
+  openModal('quitConfirmModal');
+});
+
+// 프로그램 종료 확인 (비밀번호 검사 후 종료)
+document.getElementById('quitConfirmOK').addEventListener('click', () => {
+  const password = document.getElementById('quitConfirmPassword').value;
+  if (password === 'admin') {
+     ipcRenderer.invoke('quit-app');
+  } else {
+    alert("잘못된 비밀번호입니다.");
+  }
+});
+
+// 취소 버튼 → 모달 닫기
+document.getElementById('quitConfirmCancel').addEventListener('click', () => {
+  closeModal('quitConfirmModal');
+});
 
 
