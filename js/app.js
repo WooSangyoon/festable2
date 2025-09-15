@@ -1,10 +1,3 @@
-// ===== app.js 상단에 추가 =====
-const { ipcRenderer } = require('electron');
-
-// 관리자 비밀번호 (관리자 모달과 동일 값 사용)
-const ADMIN_PASSWORD = 'admin';
-
-
 // 전역 변수
 let tables = [];
 let currentTableId = null;
@@ -77,41 +70,44 @@ function setupEventListeners() {
     setupInsightsEvents();
 }
 
-// 모달 이벤트 설정
-function setupModalEvents() {
-    // 합석 모달
-    document.getElementById('combineCancel').addEventListener('click', () => closeModal('combineModal'));
-    document.getElementById('combineConfirm').addEventListener('click', () => confirmCombine());
-
-    // 자리이동 모달
-    document.getElementById('moveCancel').addEventListener('click', () => closeModal('moveModal'));
-    document.getElementById('moveConfirm').addEventListener('click', () => confirmMove());
-
-    // 주문 현황 모달
-    document.getElementById('orderStatusClose').addEventListener('click', () => closeModal('orderStatusModal'));
-
-    // 메뉴 추가 모달
-    document.getElementById('addMenuCancel').addEventListener('click', () => closeModal('addMenuModal'));
-    document.getElementById('addMenuConfirm').addEventListener('click', () => confirmAddMenu());
-
-    // 수량 조절
-    document.getElementById('quantityDecrease').addEventListener('click', () => adjustQuantity(-1));
-    document.getElementById('quantityIncrease').addEventListener('click', () => adjustQuantity(1));
-
-    // 인사이트 모달
-    document.getElementById('insightsClose').addEventListener('click', () => closeModal('insightsModal'));
-    document.getElementById('endBusiness').addEventListener('click', () => endBusiness());
+function safeAddEventListener(id, event, handler) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener(event, handler);
+    } else {
+        console.warn(`⚠️ Element with ID "${id}" not found`);
+    }
 }
+
+function setupModalEvents() {
+    safeAddEventListener('combineCancel', 'click', () => closeModal('combineModal'));
+    safeAddEventListener('combineConfirm', 'click', () => confirmCombine());
+
+    safeAddEventListener('moveCancel', 'click', () => closeModal('moveModal'));
+    safeAddEventListener('moveConfirm', 'click', () => confirmMove());
+
+    safeAddEventListener('orderStatusClose', 'click', () => closeModal('orderStatusModal'));
+
+    safeAddEventListener('addMenuCancel', 'click', () => closeModal('addMenuModal'));
+    safeAddEventListener('addMenuConfirm', 'click', () => confirmAddMenu());
+
+    safeAddEventListener('quantityDecrease', 'click', () => adjustQuantity(-1));
+    safeAddEventListener('quantityIncrease', 'click', () => adjustQuantity(1));
+
+    safeAddEventListener('insightsClose', 'click', () => closeModal('insightsModal'));
+    safeAddEventListener('endBusiness', 'click', () => endBusiness());
+}
+
 
 // 인사이트 이벤트 설정
 function setupInsightsEvents() {
-    document.getElementById('insightsBtn').addEventListener('click', () => {
+    safeAddEventListener('insightsBtn', 'click', () => {
         openModal('insightsModal');
         document.getElementById('passwordSection').style.display = 'block';
         document.getElementById('insightsContent').style.display = 'none';
     });
 
-    document.getElementById('passwordSubmit').addEventListener('click', () => {
+    safeAddEventListener('passwordSubmit', 'click', () => {
         const password = document.getElementById('passwordInput').value;
         if (password === 'admin') {
             document.getElementById('passwordSection').style.display = 'none';
@@ -122,6 +118,7 @@ function setupInsightsEvents() {
         }
     });
 }
+
 
 // 테이블 렌더링
 // 테이블 카드 생성 시 총액 재계산
@@ -306,17 +303,18 @@ function enterTable(tableId) {
     const table = tables.find(t => t.id === tableId);
     if (table && table.state === TABLE_STATES.AVAILABLE) {
         table.state = TABLE_STATES.IN_USE;
-        table.remainingTime = 180; // 180분 기본 시간
+        table.remainingTime = 180;
         table.startTime = Date.now();
+        table.endTime = table.startTime + table.remainingTime * 60000;  // ✅ 종료시각 저장
 
-        // ✅ 입장 즉시 총 테이블 수 1 증가
         businessStats.totalTables++;
 
         renderTables();
         updateOrderSummary();
-        updateAdminPanel(); // 관리자 모드 즉시 반영
+        updateAdminPanel();
     }
 }
+
 
 // 관리자 탭 전환 이벤트
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -366,21 +364,31 @@ function exitTable(tableId) {
 
 
 // 시간 조정
+// 시간 조정
 function adjustTime(tableId, minutes) {
     const table = tables.find(t => t.id === tableId);
     if (table && (table.state === TABLE_STATES.IN_USE || table.state === TABLE_STATES.EXPIRED)) {
-        table.remainingTime = Math.max(0, table.remainingTime + minutes);
-        
-        // 시간이 0이 되면 만료 상태로 변경
+        // ✅ 종료 시각 자체를 변경
+        if (table.endTime) {
+            table.endTime += minutes * 60000; // 분 → ms
+        } else {
+            table.endTime = Date.now() + (table.remainingTime + minutes) * 60000;
+        }
+
+        // 남은 시간 다시 계산
+        table.remainingTime = Math.max(0, Math.ceil((table.endTime - Date.now()) / 60000));
+
+        // 상태 갱신
         if (table.remainingTime === 0) {
             table.state = TABLE_STATES.EXPIRED;
         } else if (table.state === TABLE_STATES.EXPIRED) {
             table.state = TABLE_STATES.IN_USE;
         }
-        
+
         renderTables();
     }
 }
+
 
 // 합석 모달 표시
 function showCombineModal(tableId) {
@@ -439,6 +447,8 @@ function confirmCombine() {
         targetTable.remainingTime = 0;
         targetTable.orders = [];
         targetTable.startTime = null;
+        targetTable.endTime = currentTable.endTime;
+
         targetTable.totalRevenue = 0;
         
         renderTables();
@@ -841,27 +851,43 @@ function closeModal(modalId) {
 }
 
 // 타이머 시작
+// 타이머 시작
 function startTimer() {
     timerInterval = setInterval(() => {
+        const now = Date.now();
         let hasChanges = false;
-        
+
         tables.forEach(table => {
-            if (table.state === TABLE_STATES.IN_USE && table.remainingTime > 0) {
-                table.remainingTime--;
-                hasChanges = true;
-                
-                if (table.remainingTime === 0) {
-                    table.state = TABLE_STATES.EXPIRED;
+            if (table.state === TABLE_STATES.IN_USE) {
+                // 종료시각 기준으로 남은 시간 계산
+                if (!table.endTime) {
+                    table.endTime = (table.startTime || now) + table.remainingTime * 60000;
                 }
+                // 항상 남은 시간을 재계산
+                const newRemain = Math.max(0, Math.floor((table.endTime - now) / 60000));
+
+                if (newRemain !== table.remainingTime) {
+                    table.remainingTime = newRemain;
+                    hasChanges = true;
+                }
+
+                if (newRemain === 0 && table.state !== TABLE_STATES.EXPIRED) {
+                    table.state = TABLE_STATES.EXPIRED;
+                    hasChanges = true;
+                }
+                //console.log(`테이블 ${table.id} → 남은 시간: ${table.remainingTime}분`);
             }
         });
-        
+
+        // ✅ 매분마다 주문시간(x분 전)도 같이 갱신
         if (hasChanges) {
             renderTables();
             updateOrderSummary();
         }
-    }, 60000); // 1분마다 실행
+    }, 1000); // 1초마다 체크 → 매분 변화를 감지
 }
+
+
 
 // 즐겨찾기 토글
 function toggleFavorite(tableId) {
@@ -1134,33 +1160,3 @@ function resetBusiness() {
 }
 
 
-// ===== app.js 하단의 이벤트 바인딩 영역 근처에 추가 =====
-
-// 1) 관리자 탭의 "프로그램 종료" 버튼 클릭 시: 비번 모달 오픈
-document.getElementById('quitAppBtn').addEventListener('click', () => {
-  const input = document.getElementById('quitConfirmPassword');
-  if (input) input.value = '';     // 이전 입력 초기화
-  openModal('quitConfirmModal');
-});
-
-// 2) 재확인 모달 - 취소
-document.getElementById('quitConfirmCancel').addEventListener('click', () => {
-  closeModal('quitConfirmModal');
-});
-
-// 3) 재확인 모달 - 종료 확정
-document.getElementById('quitConfirmOK').addEventListener('click', async () => {
-  const pw = document.getElementById('quitConfirmPassword').value.trim();
-  if (pw !== ADMIN_PASSWORD) {
-    alert('비밀번호가 올바르지 않습니다.');
-    return;
-  }
-
-  // (선택) 종료 전에 하고 싶은 작업이 있으면 여기서 처리:
-  // 예: 저장/로그 남기기 등
-  // exportSalesFile();  // 자동 저장하고 싶다면 해제
-  // resetBusiness();    // 데이터 초기화까지 원하면 해제
-
-  // 메인 프로세스에 종료 요청
-  await ipcRenderer.invoke('quit-app');  // main.js에서 처리
-});

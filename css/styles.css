@@ -280,6 +280,7 @@ body {
 }
 
 /* 사이드바 */
+/* 사이드바 */
 .sidebar {
     width: 350px;
     background-color: #3a3a3a;
@@ -287,8 +288,19 @@ body {
     display: flex;
     flex-direction: column;
     border-left: 2px solid #555;
+    /* 선택: 높이를 명확히 주고 싶다면 활성화 (부모 .app-container가 100vh라 생략해도 됨)
+    height: 100vh;
+    */
 }
-.order-summary { flex: 1; }
+
+/* ✅ 콘텐츠 영역만 스크롤되도록 */
+.order-summary {
+    flex: 1;
+    min-height: 0;        /* flex 자식이 스크롤하려면 필요 */
+    overflow-y: auto;     /* 여기만 스크롤 */
+    padding-right: 6px;   /* 스크롤바 여백 */
+}
+
 .order-summary h3 {
     margin-bottom: 20px;
     color: #ffffff;
@@ -727,4 +739,13 @@ body {
   overflow-y: auto;
   padding-right: 6px;
   box-sizing: border-box;
+}
+
+
+/* 입장 시각 표시 */
+.entry-time {
+  font-size: 12px;
+  color: #bbb;
+  margin-top: -4px;
+  margin-bottom: 8px;
 }
