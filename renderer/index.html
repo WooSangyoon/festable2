@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>축제 주점 테이블 관리 시스템</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 메인 테이블 그리드 영역 -->
+        <div class="main-content">
+            <div class="tables-grid" id="tablesGrid">
+                <!-- 테이블 카드들이 동적으로 생성됩니다 -->
+            </div>
+        </div>
+
+        <!-- 우측 사이드바 -->
+        <div class="sidebar">
+            <div class="order-summary">
+                <h3>주문 처리 요약</h3>
+                <div class="pending-items" id="pendingItems"></div>
+                <div class="order-queue" id="orderQueue"></div>
+            </div>
+            <!-- 관리자 설정 버튼 -->
+            <button class="insights-btn" id="adminBtn">관리자 설정</button>
+        </div>
+    </div>
+
+    <!-- 모달들 -->
+    <!-- 합석 모달 -->
+    <div class="modal" id="combineModal">
+        <div class="modal-content">
+            <h3>테이블 합석</h3>
+            <p>합석할 테이블을 선택하세요:</p>
+            <div class="table-selection" id="combineTableSelection"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="combineCancel">취소</button>
+                <button class="btn btn-primary" id="combineConfirm">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 자리이동 모달 -->
+    <div class="modal" id="moveModal">
+        <div class="modal-content">
+            <h3>자리이동</h3>
+            <p>이동할 테이블을 선택하세요:</p>
+            <div class="table-selection" id="moveTableSelection"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="moveCancel">취소</button>
+                <button class="btn btn-primary" id="moveConfirm">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 주문 현황 모달 -->
+    <div class="modal" id="orderStatusModal">
+        <div class="modal-content">
+            <h3 id="orderStatusTitle">테이블 주문 현황</h3>
+            <div class="order-list" id="orderList"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="orderStatusClose">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메뉴 추가 모달 -->
+    <div class="modal" id="addMenuModal">
+        <div class="modal-content">
+            <h3>메뉴 추가</h3>
+            <div class="menu-selection" id="menuSelection"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="addMenuCancel">취소</button>
+                <button class="btn btn-primary" id="addMenuConfirm">추가</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 관리자 설정 모달 -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <h3>관리자 설정</h3>
+
+            <!-- 비밀번호 입력 섹션 -->
+            <div id="passwordSection">
+                <input type="password" id="passwordInput" placeholder="비밀번호 입력">
+                <button id="passwordSubmit" class="btn btn-primary">확인</button>
+            </div>
+
+            <!-- 관리자 콘텐츠 -->
+            <div id="adminContent" style="display:none;">
+
+            <!-- ✅ 탭 버튼 -->
+            <div class="admin-tabs">
+                <button class="tab-btn active" data-tab="statsTab">통계</button>
+                <button class="tab-btn" data-tab="menuTab">메뉴 관리</button>
+            </div>
+
+            <!-- ✅ 통계 탭 -->
+            <div id="statsTab" class="tab-content active">
+                <p>총 테이블 수: <span id="adminTotalTables">0</span></p>
+                <p>총 매출: <span id="adminTotalRevenue">0원</span></p>
+                <br/>
+                <h4>메뉴 판매 현황</h4>
+                <div id="menuStats"></div>
+
+                <!-- ✅ 장사 종료 버튼 -->
+                <div class="modal-buttons">
+                <button id="endBusinessBtn" class="btn btn-danger">장사 종료 (엑셀 저장)</button>
+                </div>
+            </div>
+
+            <!-- ✅ 메뉴 관리 탭 -->
+            <div id="menuTab" class="tab-content">
+                <h4>메뉴 추가</h4>
+                <input type="text" id="newMenuName" placeholder="메뉴 이름">
+                <input type="number" id="newMenuPrice" placeholder="가격">
+                <button id="addMenuBtn" class="btn btn-success">추가</button>
+
+                <h4>메뉴 수정</h4>
+                <div id="menuManagement"></div>
+            </div>
+            </div>
+
+
+            <!-- 닫기 버튼 -->
+            <div class="modal-buttons">
+                <button id="adminClose" class="btn btn-secondary">닫기</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="../js/app.js"></script> 
+</body>
+</html>
