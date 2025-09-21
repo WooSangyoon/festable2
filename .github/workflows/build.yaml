@@ -2,30 +2,31 @@ name: build-windows
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'        
+
+permissions:
+  contents: write  
 
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
-      # ✅ 소스 체크아웃
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      # ✅ Node.js 설치
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
-
-      # ✅ 의존성 설치
-      - name: Install dependencies
-        run: npm install
-
-      # ✅ Windows용 exe 빌드 + GitHub Release 자동 업로드
-      - name: Build and Publish
+      - run: npm ci
+      - name: Build and Publish to GitHub Releases
         run: npx electron-builder --win --publish always
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          # 별도 PAT 없이 내장 토큰을 GH_TOKEN으로 전달
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # (선택) Actions 화면에서도 exe를 보이게 하려면 아티팩트 업로드 추가
+      - name: Upload exe artifact (debug/backup)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: festable2-windows
+          path: dist/*.exe
