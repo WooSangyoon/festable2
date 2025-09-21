@@ -1,6 +1,6 @@
 {
   "name": "festival-pub-manager",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "축제 주점 테이블 관리 시스템",
   "main": "src/main.js",
   "license": "ISC",
