@@ -14,19 +14,57 @@ let businessStats = {
 const MENU_ITEMS = [
     { id: '1', name: '제육볶음', price: 15000 },
     { id: '2', name: '오뎅탕', price: 15000 },
-    { id: '3', name: '두부김치', price: 15000 },
-    { id: '4', name: '김치전', price: 0 },
-    { id: '5', name: '들기름계란후라이', price: 0 },
-    { id: '6', name: '계란말이', price: 0 },
-    { id: '7', name: '컵라면리조또', price: 0 },
-    { id: '8', name: '김치볶음밥', price: 0 },
-    { id: '9', name: '소세지야채볶음', price: 0 },
-    { id: '10', name: '주먹밥', price: 0 },
-    { id: '11', name: '설탕토마토', price: 0 },
-    { id: '12', name: '홍초', price: 0 },
-    { id: '13', name: '라면땅', price: 0 },
-    { id: '14', name: '콘치즈', price: 0 }
+    { id: '3', name: '두부김치', price: 12000 },
+    { id: '4', name: '신라면리조또', price: 13000 },
+
+    { id: '5', name: '김치볶음밥', price: 8000 },
+    { id: '6', name: '콘치즈', price: 6000 },
+    { id: '7', name: '들기름계란후라이', price: 6000 },
+    { id: '8', name: '김치전', price: 10000 },
+    { id: '9', name: '주먹밥', price: 4000 }
+    ,
+    { id: '10', name: '십만볼트세트', price: 20000 },
+    { id: '11', name: '백만볼트세트', price: 28000 },
+    { id: '12', name: '천만볼트세트', price: 33000 }
 ];
+
+// ✅ 세트 구성(세트 메뉴 ID → [{id, qty}...])
+const SET_BUNDLES = {
+  '10': [ // 십만볼트세트
+    { id: '1', qty: 1 }, // 제육볶음
+    { id: '6', qty: 1 }, // 콘치즈
+  ],
+  '11': [ // 백만볼트세트
+    { id: '2', qty: 1 }, // 오뎅탕
+    { id: '5', qty: 1 }, // 김치볶음밥
+    { id: '7', qty: 1 }, // 들기름계란후라이
+  ],
+  '12': [ // 천만볼트세트
+    { id: '2', qty: 1 }, // 오뎅탕
+    { id: '1', qty: 1 }, // 제육볶음
+    { id: '9', qty: 1 }, // 주먹밥
+  ],
+};
+
+// ✅ 메뉴 이름 찾기
+function getMenuNameById(id) {
+  const item = MENU_ITEMS.find(it => it.id === id);
+  return item ? item.name : `Unknown(${id})`;
+}
+
+// ✅ 주문 1건을 개별 메뉴로 전개(세트면 구성품으로 풀기)
+function expandOrderToItems(order) {
+  const bundle = SET_BUNDLES[order.menuId];
+  if (!bundle) {
+    return [{ name: getMenuNameById(order.menuId), qty: order.quantity }];
+  }
+  return bundle.map(comp => ({
+    name: getMenuNameById(comp.id),
+    qty: comp.qty * order.quantity,
+  }));
+}
+
+
 
 // 테이블 상태 상수
 const TABLE_STATES = {
@@ -304,7 +342,7 @@ function enterTable(tableId) {
     const table = tables.find(t => t.id === tableId);
     if (table && table.state === TABLE_STATES.AVAILABLE) {
         table.state = TABLE_STATES.IN_USE;
-        table.remainingTime = 180;
+        table.remainingTime = 120;
         table.startTime = Date.now();
         table.endTime = table.startTime + table.remainingTime * 60000;  // ✅ 종료시각 저장
 
@@ -752,25 +790,34 @@ function updateOrderSummary() {
         if (table.state === TABLE_STATES.IN_USE || table.state === TABLE_STATES.EXPIRED) {
             const pendingOrders = table.orders.filter(order => order.state === ORDER_STATES.PENDING);
             pendingOrders.forEach(order => {
-                const menuItem = MENU_ITEMS.find(item => item.id === order.menuId);
-                if (!pendingStats[menuItem.name]) {
-                    pendingStats[menuItem.name] = 0;
-                }
-                pendingStats[menuItem.name] += order.quantity;
+                expandOrderToItems(order).forEach(({ name, qty }) => {
+                    if (!pendingStats[name]) pendingStats[name] = 0;
+                    pendingStats[name] += qty;
+                });
             });
+
+
             
             if (pendingOrders.length > 0) {
-                const orderSummary = pendingOrders.map(order => {
-                    const menuItem = MENU_ITEMS.find(item => item.id === order.menuId);
-                    return `${menuItem.name} ${order.quantity}개 / `;
-                }).join(' ');
-                
+            // 세트 전개 후 테이블 단위로 항목별 집계
+                const perTableCounts = {};
+                pendingOrders.forEach(order => {
+                    expandOrderToItems(order).forEach(({ name, qty }) => {
+                    perTableCounts[name] = (perTableCounts[name] || 0) + qty;
+                    });
+                });
+
+                const orderSummary = Object.entries(perTableCounts)
+                    .map(([name, count]) => `${name} ${count}개 / `)
+                    .join(' ');
+
                 queueItems.push({
                     tableId: table.id,
                     summary: orderSummary,
                     orderTime: Math.min(...pendingOrders.map(o => o.orderTime))
                 });
             }
+
         }
     });
     
@@ -1001,7 +1048,7 @@ function updateAdminPanel() {
       <input type="text" value="${item.name}" data-index="${index}" class="menu-name-input">
       <input type="number" value="${item.price}" data-index="${index}" class="menu-price-input">
       <button class="btn btn-sm btn-complete saveMenuBtn menuad" data-index="${index}">저장</button>
-      <button class="btn btn-sm btn-danger deleteMenuBtn menuad" data-index="${index}">삭제</button>
+      
     </div>
   `).join('');
 
